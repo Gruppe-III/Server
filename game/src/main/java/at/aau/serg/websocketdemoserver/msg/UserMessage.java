@@ -5,13 +5,16 @@ public class UserMessage {
     private final MessageType messageType = MessageType.USER;
 
     private String name;
+    private String password;
     private ActionType actionType;
     private String id;
 
     private Double points;
 
-    public UserMessage(String name) {
+    public UserMessage(String name, String password) {
+
         this.name = name;
+        this.password = password;
     }
 
     public Double getPoints() {
@@ -34,6 +37,14 @@ public class UserMessage {
         this.name = name;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     public ActionType getActionType() {
         return actionType;
     }
@@ -51,7 +62,7 @@ public class UserMessage {
     }
 
     public enum ActionType {
-        ADD, DELETE, UPDATE, ERROR, DUPLICATE
+        OK, ADD, DELETE, UPDATE, ERROR, DUPLICATE, REGISTER, REGISTER_OK, REGISTER_ERR, LOGIN, LOGIN_OK, LOGIN_ERR
     }
 }
 

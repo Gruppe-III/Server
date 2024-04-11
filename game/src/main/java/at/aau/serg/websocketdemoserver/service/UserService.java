@@ -13,7 +13,16 @@ public class UserService {
 
     @Autowired
     public UserService(InMemoryUserRepository userRepository) {
+
         this.userRepository = userRepository;
+
+        //default data
+        User testuser = new User("test@test.at");
+        testuser.setPassword("Daniel123");
+        System.out.println("test@test.at, password: Daniel123 hinzugefügt");
+        System.out.println(testuser.getUsername() + "##" + testuser.getPassword() + "##" + testuser.getId());
+        //dieser scheiss hat mich wsl 2h gekostet...
+        userRepository.addUser(testuser);
     }
 
 
@@ -35,7 +44,9 @@ public class UserService {
 
     public User findUserByName(String name) {
         return userRepository.findByName(name);
+
     }
+
 
     public boolean isUserExist(String username) {
         return userRepository.isUserExist(username);

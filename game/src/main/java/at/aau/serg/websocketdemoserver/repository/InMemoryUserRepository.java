@@ -13,16 +13,6 @@ import java.util.Set;
 public class InMemoryUserRepository {
     private final Set<User> storage = new HashSet<>();
 
-    //public InMemoryUserRepository() {
-        // Hier können Sie ggf. Initialisierungen vornehmen
-
-    //}
-
-    /*@Bean
-    public InMemoryUserRepository userRepository() {
-        return new InMemoryUserRepository();
-    }*/
-
     public User findById(String id) {
         for (User user : storage) {
             if (id.equals(user.getId())) { // Check id against null to avoid NPE
@@ -34,9 +24,7 @@ public class InMemoryUserRepository {
 
     public void addUser(User user) {
         //todo
-
         storage.add(user);
-
     }
 
     public void removeUser(String id) {
@@ -53,10 +41,12 @@ public class InMemoryUserRepository {
         }
     }
 
+
     public Set<User> findAllUsers() {
         //todo
         return storage;
     }
+
 
     public User findByName(String name) {
         for (User user : storage) {

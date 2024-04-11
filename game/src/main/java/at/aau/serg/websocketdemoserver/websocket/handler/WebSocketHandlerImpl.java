@@ -19,11 +19,11 @@ public class WebSocketHandlerImpl implements WebSocketHandler {
 
     final private Gson gson = new Gson();
 
-    /*@Autowired
-    private InMemoryUserRepository userRepository;*/
+    @Autowired
+    private InMemoryUserRepository userRepository;
 
     @Autowired
-    private UserService userService;
+    private UserService userService; // hier wurde auf final geändert, laut intelliJ ein vorschlag
 
 
     public WebSocketHandlerImpl() {
@@ -97,14 +97,17 @@ public class WebSocketHandlerImpl implements WebSocketHandler {
 
         // Process the UserMessage based on its action type
         switch (userMessage.getActionType()) {
-            case ADD:
-                handleAddAction(session, payload);
+            case REGISTER:
+                handleRegisterAction(session, payload);
                 break;
             case DELETE:
                 handleDeleteAction(session, userMessage);
                 break;
             case UPDATE:
                 handleUpdateAction(session, userMessage);
+                break;
+            case LOGIN:
+                handleLoginAction(session, payload);
                 break;
             default:
                 System.out.println("Unknown action type received");
@@ -117,75 +120,106 @@ public class WebSocketHandlerImpl implements WebSocketHandler {
         //session.sendMessage(new TextMessage("echo from handler: " + payload));
     }
 
-    public void handleAddAction (WebSocketSession session, String payload) throws Exception{
-        //session.sendMessage(new TextMessage(payload));
-        //1 user message aus der payload extrahieren
-        UserMessage userMessage = gson.fromJson(payload, UserMessage.class);
-        System.out.println("##" + payload + "##");
-        //2 user aus usermessage erstellen
-        User userToAdd = new User(userMessage.getName());
-        System.out.println("##");
-        System.out.println(userToAdd.getId());
-        System.out.println(userToAdd.getUsername());
-        System.out.println(userToAdd.getPoints());
-        System.out.println("##");
 
-        //wenn jemand gefunden wurde
-        if(userService.findUserByName(userMessage.getName()) != null) {
-            System.out.println("duplicate");
-            userMessage.setActionType(UserMessage.ActionType.DUPLICATE);
-        }
-        else {
-            System.out.println("no duplicate");
-            userService.addUser(userToAdd);
-            userMessage.setId(userToAdd.getId());
-            userMessage.setName(userMessage.getName());
-        }
-        String payloadExport = gson.toJson(userMessage);
-        session.sendMessage(new TextMessage(payloadExport));
-        System.out.println("send payload to client");
-
-
-        //wenn er nicht gefunden wird, kann man ihn hinzufügen
-        /*if (userRepository.findById(userToAdd.getId()) == null) {
-            userRepository.addUser(userToAdd);
-            System.out.println("user added");
-        }*/
-        //userToAdd.setPoints(0.0);
-
-
-
-
-
-
-        //if findByName != null --> user found --> duplicate
-        /*if (userRepository.findByName(userToAdd.getUsername()) != null)  {
-            userMessage.setActionType(UserMessage.ActionType.DUPLICATE);
-            String payloadExport = gson.toJson();
-            System.out.println("duplicate");
-
-        }
-        else {
-            System.out.println("no duplicate");
-        }*/
-
-        /**
-         * vll vom Objekt zur Message --> zur payload*/
-
-        //String payloadExport = gson.toJson(userMessage);
-        //session.sendMessage(new TextMessage(payloadExport));
-        //3 wenn user existiert, dann... duplicate
-
-
-
-
-    }
 
     public void handleDeleteAction (WebSocketSession session, UserMessage userMessage) {
 
     }
 
     public void handleUpdateAction (WebSocketSession session, UserMessage userMessage) {
+
+    }
+
+
+    public void handleLoginAction(WebSocketSession session, String payload) throws Exception {
+        System.out.println("reached handle login action beginning");
+        UserMessage userMessage = gson.fromJson(payload, UserMessage.class);
+        User userToCheck = new User(userMessage.getName(), userMessage.getPassword());
+        System.out.println(userToCheck.getUsername() + "//" + userToCheck.getPassword() );
+
+
+        User userFound = userService.findUserByName(userToCheck.getUsername());
+        if (userFound != null) {
+            System.out.println("juhu - found");
+        }
+
+        System.out.println("reached handle at if cause");
+        if (userFound != null) {
+            if (userFound.getPassword().equals(userToCheck.getPassword())) {
+                System.out.println("user found");
+
+                userMessage.setActionType(UserMessage.ActionType.LOGIN_OK);
+                userMessage.setId(userFound.getId());
+                userMessage.setName(userFound.getUsername());
+                userMessage.setPassword(userFound.getPassword());
+                String payloadExport = gson.toJson(userMessage);
+                session.sendMessage(new TextMessage(payloadExport));
+            }
+            else {
+                System.out.println("user found, but password not ok");
+                userMessage.setActionType(UserMessage.ActionType.LOGIN_ERR);
+                userMessage.setId("login_err");
+                userMessage.setName("login_err");
+                userMessage.setPassword("login_err");
+                String payloadExport = gson.toJson(userMessage);
+                session.sendMessage(new TextMessage(payloadExport));
+            }
+
+        }
+        else {
+            System.out.println("user not found");
+            userMessage.setActionType(UserMessage.ActionType.LOGIN_ERR);
+            userMessage.setId("login_err");
+            userMessage.setName("login_err");
+            userMessage.setPassword("login_err");
+            String payloadExport = gson.toJson(userMessage);
+            session.sendMessage(new TextMessage(payloadExport));
+        }
+
+    }
+
+    public void handleRegisterAction (WebSocketSession session, String payload) throws Exception{
+        System.out.println("reached handle register action beginning");
+        UserMessage userMessage = gson.fromJson(payload, UserMessage.class);
+        User userToCheck = new User(userMessage.getName(), userMessage.getPassword());
+        System.out.println(userMessage.getName() + "//" + userMessage.getPassword() );
+
+        //User userFound = userService.findUserByName(userToCheck.getUsername());
+        System.out.println("user found -->" + userToCheck.getId());
+
+        if (userToCheck.getId() != null) {
+            //
+            //if null, dann user zu db
+            //
+            System.out.println("user already exists in db");
+            userMessage.setActionType(UserMessage.ActionType.REGISTER_ERR);
+            userMessage.setId("err");
+            userMessage.setName("err");
+            userMessage.setPassword("err");
+            //
+            String payloadExport = gson.toJson(userMessage);
+            session.sendMessage(new TextMessage(payloadExport));
+
+        }
+        else {
+            //
+            System.out.println("no user found in db --> add");
+            User userToRegister = new User(userMessage.getName());
+            userToRegister.setPassword(userMessage.getPassword());
+            userService.addUser(userToRegister);
+
+            userMessage.setActionType(UserMessage.ActionType.REGISTER_OK);
+            userMessage.setId(userToRegister.getId());
+            userMessage.setName(userToRegister.getUsername());
+            userMessage.setPassword(userToRegister.getPassword());
+            //
+            String payloadExport = gson.toJson(userMessage);
+            session.sendMessage(new TextMessage(payloadExport));
+
+        }
+
+        //String payloadExport = gson.toJson(userMessage);
+        //session.sendMessage(new TextMessage(payloadExport));
 
     }
 
